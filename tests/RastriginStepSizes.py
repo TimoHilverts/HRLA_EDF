@@ -14,6 +14,7 @@ algorithm001 = GO.HRLA(d=d, M=100, N=10, K=14000, h=0.001, title=title, U=U, dU=
 samples_filename001 = algorithm001.generate_samples(As=[1,2,3,4], sim_annealing=False)
 postprocessor001 = PostProcessor(samples_filename001)
 postprocessor001.compute_tables([14000], 100, "mean")
+postprocessor001.compute_tables([14000], 100, "median")
 postprocessor001.compute_tables([14000], 100, "std")
 
 # Step-size of h=0.01
@@ -21,6 +22,7 @@ algorithm01 = GO.HRLA(d=d, M=100, N=10, K=14000, h=0.01, title=title, U=U, dU=dU
 samples_filename01 = algorithm01.generate_samples(As=[1,2,3,4], sim_annealing=False)
 postprocessor01 = PostProcessor(samples_filename01)
 postprocessor01.compute_tables([14000], 100, "mean")
+postprocessor01.compute_tables([14000], 100, "median")
 postprocessor01.compute_tables([14000], 100, "std")
 
 # Step-size of h=0.1
@@ -28,4 +30,5 @@ algorithm1 = GO.HRLA(d=d, M=100, N=10, K=14000, h=0.1, title=title, U=U, dU=dU, 
 samples_filename1 = algorithm1.generate_samples(As=[1,2,3,4], sim_annealing=False)
 postprocessor1 = PostProcessor(samples_filename1)
 postprocessor1.compute_tables([14000], 100, "mean")
+postprocessor1.compute_tables([14000], 100, "median")
 postprocessor1.compute_tables([14000], 100, "std")

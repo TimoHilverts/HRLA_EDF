@@ -3,7 +3,7 @@
 #SBATCH -N 1                                    # Nodes requested
 #SBATCH -n 1                                    # Tasks requested
 #SBATCH --exclusive                             # No other jobs can share nodes with this job
-#SBATCH -t 3:00:00                              # Time requested in hour:minute:second
+#SBATCH -t 6:00:00                              # Time requested in hour:minute:second
 #SBATCH --output=output/output/output_%j.txt    # Output file
 #SBATCH --error=output/error/error_%j.txt       # Error file
 

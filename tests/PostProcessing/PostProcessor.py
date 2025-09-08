@@ -90,6 +90,8 @@ class PostProcessor:
                     bests_sub[i+1] = f"& {np.mean(bsts):.4f}"
                 elif mode == "std":
                     bests_sub[i+1] = f"& {np.std(bsts):.4f}"
+                elif mode == "median":
+                    bests_sub[i+1] = f"& {np.median(bsts):.4f}"
                 elif mode == "best":
                     bests_sub[i+1] = f"& {np.min(bsts):.4f}"
 
