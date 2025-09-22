@@ -1,4 +1,4 @@
-from .Algorithm import Algorithm
+from ..Algorithm import Algorithm
 import numpy as np
 
 class HRLA(Algorithm):
