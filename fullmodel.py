@@ -92,10 +92,10 @@ gradU_func = sp.lambdify(variables, gradU_sym, "numpy")
 
 
 def U(x):
-    vals = np.clip(x, tmin, tmax) #Here we clip the variables in between tmin and tmax, to have positive values
-    return float(U_func(*vals))
+    #vals = np.clip(x, tmin, tmax) #Here we clip the variables in between tmin and tmax, to have positive values
+    return float(U_func(*x))
 
 def dU(x):
-    vals = np.clip(x, tmin, tmax)
-    grad_vals = np.array(gradU_func(*vals), dtype=float).flatten()
+    #vals = np.clip(x, tmin, tmax)
+    grad_vals = np.array(gradU_func(*x), dtype=float).flatten()
     return grad_vals
