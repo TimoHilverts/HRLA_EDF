@@ -93,7 +93,7 @@ class PostProcessor:
                 elif mode == "median":
                     bests_sub[i+1] = f"& {np.median(bsts):.4f}"
                 elif mode == "best":
-                    bests_sub[i+1] = f"& {np.min(bsts):.4f}"
+                    bests_sub[i+1] = f"& {-np.min(bsts):.4f}" #added a - to obtain the max revenue (so - min)
 
             return bests_sub
 
@@ -137,6 +137,8 @@ class PostProcessor:
         
         for i, a in enumerate(self.As):
             print(f"Best value for a={a}: {bests[i]}")
+    
+        return bests
 
     def plot_curves(self, dpi):
         # Create subplots

@@ -1,94 +1,113 @@
+import matplotlib.pyplot as plt
 import numpy as np
+import sympy as sp
 import GlobalOptimizationHRLA as GO
-from PostProcessing import PostProcessor, Comparator
+from PostProcessing import PostProcessor
 
-# --- Basic model constants (as in your plotting snippet) ---
-N = 2   ## 2 contracts
-S = 3   ## 3 segments
-D = 2   ## 2 time slots
+# ---------------------------------------------------
+# Model parameters
+# ---------------------------------------------------
+N = 2  
+S = 3  
+D = 2  
+
 Es = np.array([
-    [10,120],   ## segment 1 consumes mostly in slot 2
-    [130,10],   ## segment 2 consumes mostly in slot 1
-    [50,50]
+    [10, 120],
+    [130, 10],
+    [50, 50]
 ])
-lambda0 = np.array([6,1])  ## no purchase / static competitor
-beta = 0.5                 ## rationality (feel free to change)
-tmin, tmax = 0.0, 40.0     ## feasible price range for t
+outside = np.array([6, 1])
 
-## revenue of a single price t
-def revenue_of_t(t):
-    lambda1 = np.array([t, 2])  ## contract 1 cheap in slot 2
-    lambda2 = np.array([4, t])  ## contract 2 cheap in slot 1
-    lambdas = [lambda0, lambda1, lambda2]
-    total = 0.0
+tmin, tmax = 0.0, 40.0
+
+# ---------------------------------------------------
+# SYMBOLIC SETUP (generic for variable beta)
+# ---------------------------------------------------
+t = sp.Symbol("t", real=True)
+
+lambda0 = sp.Matrix(outside)
+lambda1 = sp.Matrix([t, 2])
+lambda2 = sp.Matrix([4, t])
+lambdas = [lambda0, lambda1, lambda2]
+
+def make_symbolic_revenue(beta):
+    total = 0
     for s in range(S):
-        cost = np.array([np.inner(Es[s], lambdas[n]) for n in range(N+1)], dtype=float)
-        exp_terms = np.exp(-beta * cost)
-        probs = exp_terms / np.sum(exp_terms)
-        total += np.sum(cost[1:] * probs[1:])  ## expected paid cost over purchasing options
+        E_s = sp.Matrix(Es[s])
+        costs = [E_s.dot(lam) for lam in lambdas]
+        max_c = sp.Max(*[-beta * c for c in costs])
+        shifted_exp = [sp.exp(-beta * c - max_c) for c in costs]
+        denom = sum(shifted_exp)
+        probs = [e/denom for e in shifted_exp]
+        total += sum(costs[i] * probs[i] for i in range(1, N+1))
     return total
 
-## define energy U(x) = -revenue(t) with simple box projection
-def U(x):
-    t = float(np.clip(x[0], tmin, tmax))
-    return -revenue_of_t(t)
+# ---------------------------------------------------
+# Construct HRLA objective U and dU for a given beta
+# ---------------------------------------------------
+def build_functions(beta):
+    revenue_sym = make_symbolic_revenue(beta)
+    U_sym = -revenue_sym
+    dU_sym = sp.diff(U_sym, t)
 
-## gradient dU via sympy if available, else finite-difference (kept minimal
-import sympy as sp
+    U_func = sp.lambdify(t, U_sym, "numpy")
+    dU_func = sp.lambdify(t, dU_sym, "numpy")
 
-_t = sp.Symbol('t', real=True)
+    def U(x):
+        tv = float(np.clip(x[0], tmin, tmax))
+        return float(U_func(tv))
 
-Es_sym = sp.Matrix(Es)            #sympy version of Es
-lambda0_sym = sp.Matrix(lambda0)  #sympy version of lambda0
+    def dU(x):
+        tv = float(np.clip(x[0], tmin, tmax))
+        return np.array([float(dU_func(tv))], dtype=float)
 
-_total = 0
-for s in range(S):
-    #contracts as sympy vectors
-    lam1 = sp.Matrix([_t, 2.0])
-    lam2 = sp.Matrix([4.0, _t])
+    return U, dU
 
-    #row of Es as a 1x2 sympy matrix
-    Es_row = Es_sym[s, :]
-
-    #inner products are now pure sympy
-    c0 = (Es_row * lambda0_sym)[0]
-    c1 = (Es_row * lam1)[0]
-    c2 = (Es_row * lam2)[0]
-
-    exps = [sp.exp(-beta*c0), sp.exp(-beta*c1), sp.exp(-beta*c2)]
-    Z = sum(exps)
-    p0, p1, p2 = [e/Z for e in exps]
-    _total += c1*p1 + c2*p2
-
-_Uexpr  = -sp.simplify(_total)
-_dUexpr = sp.diff(_Uexpr, _t)
-
-_Ufun  = sp.lambdify(_t, _Uexpr,  modules='numpy')
-_dUfun = sp.lambdify(_t, _dUexpr, modules='numpy')
-
-def dU(x):
-    t = float(np.clip(x[0], tmin, tmax))
-    return np.array([float(_dUfun(t))], dtype=float)
-
-## initial distribution (same style as your Rastrigin script)
+# ---------------------------------------------------
+# HRLA CONFIG
+# ---------------------------------------------------
+d = 1
 def initial():
-    return np.array([np.random.normal(20.0, 5.0)], dtype=float)
+    return np.random.multivariate_normal(np.zeros(d)+3, 10*np.eye(d))
 
-# --- Compute iterates according to algorithm (HRLA) ---
-title = "HRLA_basic"
-algorithm = GO.HRLA(d=1, M=1, N=1, K=5, h=0.01, title=title, U=U, dU=dU, initial=initial)
-samples_filename_HRLA = algorithm.generate_samples(As=[1,2,3,4], sim_annealing=False)
+As = [100]
+Ks = [1500]
 
-# --- Compute iterates according to ULA (baseline) ---
-###samples_filename_ULA = algorithm.generate_samples(As=[1,2,3,4], sim_annealing=True)
+# ---------------------------------------------------
+# Sweep over betas and store resulting max revenues
+# ---------------------------------------------------
+beta_vals = np.logspace(-2, 2, 20)
+revenues = []
 
-# --- Plot empirical probabilities (same flow as yours) ---
-postprocessor = PostProcessor(samples_filename_HRLA)
-postprocessor.plot_empirical_probabilities(dpi=1, layout="11", tols=[1,2,3,4], running=False)
+for beta in beta_vals:
+    print(f"Running HRLA for beta = {beta:.4f}")
 
-# --- Compute table of averages and standard deviations (same API) ---
-postprocessor.compute_tables([5, 14], 1, "mean")
-postprocessor.compute_tables([5, 14], 1, "std")
+    U, dU = build_functions(beta)
 
-# --- Comparator HRLA vs ULA (same as your Rastrigin layout) ---
-##comparator.plot_empirical_probabilities_per_d(dpi=1, tols=[3,4], running=True)
+    algorithm = GO.HRLA(
+        d=d, M=1, N=1, K=1500, h=0.01,
+        title=f"HRLA_beta_{beta}",
+        U=U, dU=dU, initial=initial
+    )
+
+    samplefile = algorithm.generate_samples(As=As, sim_annealing=False)
+
+    post = PostProcessor(samplefile)
+    bests = post.get_best(measured=[1500], dpi=1)
+
+    t_opt = bests[0][0]   # HRLA optimal price (dimension 1)
+    R_opt = -U([t_opt])   # revenue = -U
+
+    revenues.append(R_opt)
+
+# ---------------------------------------------------
+# Plot Beta vs Max Revenue
+# ---------------------------------------------------
+plt.figure(figsize=(8,5))
+plt.plot(beta_vals, revenues, marker='o', markersize=5)
+plt.xscale('log')
+plt.xlabel("β (consumer rationality)")
+plt.ylabel("Maximum Revenue at HRLA-optimal t")
+plt.title("β–Revenue Curve (using HRLA optimal prices)")
+plt.grid(True, which='both')
+plt.show()
