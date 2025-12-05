@@ -10,10 +10,10 @@ print(f"Analyzing {filename}...")
 
 postprocessor = PostProcessor(filename)
 
-postprocessor.compute_tables([10, 100, 3000, 15000], 1, "best")
+postprocessor.compute_tables([10, 100, 300, 500], 1, "best")
 
 # Get Best Candidates
-bests = postprocessor.get_best(measured=[10,100,3000,15000], dpi=10)
+bests = postprocessor.get_best(measured=[10,100,300,500], dpi=10)
 
 # Recalculate revenues using the shared model.U function
 revenues_best = [-model.U(np.array(x)) for x in bests]
@@ -70,7 +70,7 @@ for i, name in enumerate(var_names):
     plt.tight_layout()
 
     # Save as plot
-    plot_path = f"{output_dir}/1Dcuts_tmin-10_{name}_best_a_{best_a}.png"
+    plot_path = f"{output_dir}/1Dcuts_K500_{name}_best_a_{best_a}.png"
     plt.savefig(plot_path, dpi=300)
     plt.close()
 
