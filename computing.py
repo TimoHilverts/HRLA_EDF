@@ -16,7 +16,7 @@ if __name__ == "__main__":
         d=d, 
         M=1, 
         N=1, 
-        K=1500, 
+        K=500, 
         h=0.01, 
         title=title, 
         U=model.U, 

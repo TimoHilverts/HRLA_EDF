@@ -128,3 +128,38 @@ def dU(x):
     grad_vals = np.array(gradU_func(*vals), dtype=float).flatten()
     return grad_vals
 
+title = "HRLA_fullmodel"
+d=6
+
+def initial():
+    # Using model.d from the shared file
+    return np.random.multivariate_normal(np.zeros(d) + 3, 10 * np.eye(d))
+
+if __name__ == "__main__":
+    print("Starting Optimization...")
+    
+    # We pass the U and dU from the model module
+    algorithm = GO.HRLA(
+        d=d, 
+        M=100, 
+        N=1, 
+        K=15000, 
+        h=0.01, 
+        title=title, 
+        U=U, 
+        dU=dU, 
+        initial=initial
+    )
+    
+    # This generates the file (e.g., "samples_HRLA_basicmodel_d6....npz")
+    samples_filename = algorithm.generate_samples(As=[0.1, 1, 5, 10, 100], sim_annealing=True)
+    
+postprocessor = PostProcessor(samples_filename)
+postprocessor.compute_tables([10, 500, 15000], 1, "best") #This provides the tables with a and K vals, together with optimal revenue
+
+#plot the empirical probability distributions for all four components l_ij
+#postprocessor.plot_empirical_probabilities(layout="22", tols=[1,2,3,4], dpi=1, running=True)
+
+#With this call (the get_best call), we find for every value for a the best choices for the parameters l_ij, which achieve
+#the optimal revenue.
+bests = postprocessor.get_best(measured=[10,500,15000], dpi=10)
