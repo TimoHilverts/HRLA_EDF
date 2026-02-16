@@ -128,7 +128,7 @@ class PostProcessor:
                             val = self.U(x[kk-1])
                             if val < best_val:
                                 best_val = val
-                                best = x[kk-1]
+                                best = np.array(x[kk-1], dtype=np.float64)
             return best
 
         # Compute for each value of a in parallel

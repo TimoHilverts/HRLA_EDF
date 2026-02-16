@@ -1,0 +1,3 @@
+Model,Total expected revenue,Difference,Relative difference
+Logit (weighted),1143.8599713220974,,
+Deterministic limit (prices fixed at $x^*$),1196.0442856540972,52.18431433199976,0.045621243544071245
