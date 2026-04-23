@@ -23,7 +23,8 @@ dependencies = [
     'multiprocess',
     'dill',
     'matplotlib',
-    'tabulate'
+    'tabulate',
+    'sympy'
   ]
 
 [project.urls]
@@ -38,7 +39,8 @@ install_requires = [
     'multiprocess',
     'dill',
     'matplotlib',
-    'tabulate'
+    'tabulate',
+    'sympy'
   ]
 setup_requires = [
     'numpy',
@@ -47,5 +49,6 @@ setup_requires = [
     'multiprocess',
     'dill',
     'matplotlib',
-    'tabulate'
+    'tabulate',
+    'sympy'
   ]

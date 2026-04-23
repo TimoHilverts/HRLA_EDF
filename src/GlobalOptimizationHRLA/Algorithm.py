@@ -5,11 +5,12 @@ from tqdm import tqdm
 import multiprocess as mp
 import dill
 
-from .Schedulers import ConstantScheduler, LinearScheduler
+# from .Schedulers import ConstantScheduler, LinearScheduler
+from .Schedulers import ConstantScheduler, LinearScheduler, LogScheduler, PowerScheduler
 
 
 class Algorithm:
-    def __init__(self, d, M, N, K, h, title, U, dU, initial):
+    def __init__(self, d, M, N, K, h, title, U, dU, initial, a_min=0.1, power=2):
         print(f"Initializing Algorithm for {title} with d={d}, M={M}, N={N}, K={K}, h={h}")
         self.d = d
         self.M = M
@@ -21,6 +22,8 @@ class Algorithm:
         self.U = U
         self.dU = dU
         self.initial = initial
+        self.a_min = a_min
+        self.power = power
 
     def __get_samples(self, a, sim_annealing, seed=None):
         # Set random seed if specified
@@ -30,8 +33,11 @@ class Algorithm:
         samples = np.zeros((self.N, self.K, self.d))
 
         # Initialize the step-size scheduler
-        scheduler = LinearScheduler(0.1, a, self.K) if sim_annealing else ConstantScheduler(a)
-
+        # Use LinearScheduler with corrected a_min=0.001
+        scheduler = LinearScheduler(self.a_min, a, self.K) if sim_annealing else ConstantScheduler(a)
+        #scheduler = PowerScheduler(self.a_min, a, self.K, power=self.power) if sim_annealing else ConstantScheduler(a)
+        # Change this line in __get_samples
+        #scheduler = LinearScheduler(self.a_min, a, self.K) if sim_annealing else ConstantScheduler(a)
         # Generate N samples
         for n in range(self.N):
             # Initial sample
@@ -43,7 +49,7 @@ class Algorithm:
                 ak = scheduler.get_inverse_temperature(k)
 
                 # Perform iteration
-                x0, y0 = self._iterate(x0, y0, ak)
+                x0, y0 = self._iterate(x0, y0, ak, k)
 
                 # Store marginal sample
                 samples[n, k] = x0
@@ -57,7 +63,8 @@ class Algorithm:
         generate_task = lambda task_nb: np.array([self.__get_samples(a, sim_annealing, seed=42 + task_nb) for a in As])
 
         # Generate samples in parallel
-        with mp.Pool() as pool:
+        num_cores = int(os.environ.get("SLURM_CPUS_PER_TASK", 1))
+        with mp.Pool(processes=num_cores) as pool:
             samples = list(tqdm(pool.imap(generate_task, range(self.M)), total=self.M, desc="Generating Samples"))
 
         # Format the data to save it
@@ -88,5 +95,5 @@ class Algorithm:
 
         return samples_filename
 
-    def _iterate(self, x0, y0, a):
+    def _iterate(self, x0, y0, a, k):
         raise NotImplementedError("The iterate method must be implemented in the child class")
